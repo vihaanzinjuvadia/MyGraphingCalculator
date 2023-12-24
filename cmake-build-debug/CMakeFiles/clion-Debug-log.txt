@@ -1,0 +1,5 @@
+/snap/clion/261/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/snap/clion/261/bin/ninja/linux/x64/ninja -DCMAKE_BUILD_TYPE:STRING=Debug -G Ninja -S /home/vihaan/CLionProjects/MyGraphingCalculator -B /home/vihaan/CLionProjects/MyGraphingCalculator/cmake-build-debug
+-- Found SFML 2.5.1 in /usr/lib/x86_64-linux-gnu/cmake/SFML
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/vihaan/CLionProjects/MyGraphingCalculator/cmake-build-debug
