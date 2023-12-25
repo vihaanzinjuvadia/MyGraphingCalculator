@@ -1,10 +1,24 @@
 # ninja log v5
 1	128	1703300957618162787	CMakeFiles/MyGraphingCalculator.dir/src/FunctionParser/main_2.cpp.o	2af5016521f2a063
-1	774	1703302311760973606	CMakeFiles/MyGraphingCalculator.dir/src/main.cpp.o	571f18a02102450a
+0	800	1703536118941082361	CMakeFiles/MyGraphingCalculator.dir/src/main.cpp.o	571f18a02102450a
 1	192	1703300957686166289	CMakeFiles/MyGraphingCalculator.dir/src/FunctionParser/Parser.cpp.o	11c14b343bae2341
 0	13	1703409195028000851	build.ninja	7274ae7e568f809
 0	104	1703300919492517343	CMakeFiles/MyGraphingCalculator.dir/src/FunctionParser/Node.cpp.o	d2054cb4d0b77675
 1	288	1703300996056409539	CMakeFiles/MyGraphingCalculator.dir/src/FunctionParser/Utility/UtilityFunctions.cpp.o	5e8bb34ca2d58a0c
 0	273	1703300957766170407	CMakeFiles/MyGraphingCalculator.dir/src/FunctionParser/Lexer.cpp.o	2adc2a1ec754b0f1
 0	141	1703300919528518564	CMakeFiles/MyGraphingCalculator.dir/src/FunctionParser/Utility/UtilityVariables.cpp.o	c7623ae9bfe8e875
-774	812	1703302311800976180	MyGraphingCalculator	c2103814066dbeb5
+800	838	1703536118977076241	MyGraphingCalculator	c2103814066dbeb5
+1	814	1703536182389797082	CMakeFiles/MyGraphingCalculator.dir/src/main.cpp.o	571f18a02102450a
+814	853	1703536182425794611	MyGraphingCalculator	c2103814066dbeb5
+0	818	1703536243163551356	CMakeFiles/MyGraphingCalculator.dir/src/main.cpp.o	571f18a02102450a
+818	856	1703536243199551013	MyGraphingCalculator	c2103814066dbeb5
+1	813	1703536332677109594	CMakeFiles/MyGraphingCalculator.dir/src/main.cpp.o	571f18a02102450a
+813	852	1703536332713110994	MyGraphingCalculator	c2103814066dbeb5
+1	811	1703536343449550331	CMakeFiles/MyGraphingCalculator.dir/src/main.cpp.o	571f18a02102450a
+811	850	1703536343489552045	MyGraphingCalculator	c2103814066dbeb5
+1	810	1703536356734148645	CMakeFiles/MyGraphingCalculator.dir/src/main.cpp.o	571f18a02102450a
+810	848	1703536356774150530	MyGraphingCalculator	c2103814066dbeb5
+1	811	1703536365054551683	CMakeFiles/MyGraphingCalculator.dir/src/main.cpp.o	571f18a02102450a
+811	850	1703536365090553475	MyGraphingCalculator	c2103814066dbeb5
+1	830	1703536374939056624	CMakeFiles/MyGraphingCalculator.dir/src/main.cpp.o	571f18a02102450a
+830	869	1703536374975058507	MyGraphingCalculator	c2103814066dbeb5

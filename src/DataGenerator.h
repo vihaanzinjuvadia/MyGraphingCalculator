@@ -19,7 +19,7 @@ void data_to_plot_advanced(const std::string &function,
     plotting_data->first.clear();
     plotting_data->second.clear();
 
-    auto delta = 1;
+    auto delta = 0.005;
 
     // Setting Variable
     variable1 = 'x';
@@ -45,8 +45,8 @@ void data_to_plot_advanced(const std::string &function,
     Node* rhs_tree {rhs_parser.parse()};
 
     // Have a set number of points to sample, like 500 or smthn, and then figure out a dynamic line interval
-    double generate_line_interval_x {(2 * (MIDDLE_X/PIXELS_PER_UNIT_X)) / NUM_POINTS_TO_SAMPLE};
-    double generate_line_interval_y {(2 * (MIDDLE_Y/PIXELS_PER_UNIT_Y)) / NUM_POINTS_TO_SAMPLE};
+    double generate_line_interval_x {(2 * (MIDDLE_X/PIXELS_PER_UNIT_X)) / NUM_POINTS_TO_SAMPLE_ADVANCED};
+    double generate_line_interval_y {(2 * (MIDDLE_Y/PIXELS_PER_UNIT_Y)) / NUM_POINTS_TO_SAMPLE_ADVANCED};
 
     for (double x {-MIDDLE_X/PIXELS_PER_UNIT_X}; x <= MIDDLE_X/PIXELS_PER_UNIT_X; x += generate_line_interval_x) {
         for (double y {-MIDDLE_Y/PIXELS_PER_UNIT_Y}; y <= MIDDLE_Y/PIXELS_PER_UNIT_Y; y += generate_line_interval_y) {
@@ -70,7 +70,7 @@ void data_to_plot_advanced(const std::string &function,
 }
 
 // For Simple Functions
-void data_to_plot_simple(const std::string function,
+void data_to_plot_simple(const std::string& function,
                          std::pair<std::vector<double>, std::vector<double>> *plotting_data) {
     // clearing plotting_data so that it regenerates data instead of just adding on and on
     plotting_data->first.clear();
@@ -79,7 +79,7 @@ void data_to_plot_simple(const std::string function,
     variable1 = 'x';
 
     // To make sure that the resolution of the graph stays the same and doesn't look broken; figure out dynamically based on screen resolution and stuff
-    double generate_line_interval_x{(2 * (MIDDLE_X / PIXELS_PER_UNIT_X)) / NUM_POINTS_TO_SAMPLE};
+    double generate_line_interval_x {(2 * (MIDDLE_X / PIXELS_PER_UNIT_X)) / NUM_POINTS_TO_SAMPLE_SIMPLE};
 
     // Splitting Equation into two parts
     auto equals_index = function.find('=');

@@ -21,8 +21,8 @@ double MIDDLE_Y = 400.0;
 unsigned int MIN_SIZE_WIDTH = 800;
 unsigned int MIN_SIZE_HEIGHT = 800;
 
-int NUM_POINTS_TO_SAMPLE = 780;
-
+int NUM_POINTS_TO_SAMPLE_SIMPLE = 120;
+int NUM_POINTS_TO_SAMPLE_ADVANCED = 200;
 // make a mapping of colors to choose from
 std::vector<sf::Color> GRAPH_COLORS {sf::Color::Black, sf::Color::Blue, sf::Color::Cyan, sf::Color::Green,
                                      sf::Color::Magenta, sf::Color::Red, sf::Color::Yellow};
