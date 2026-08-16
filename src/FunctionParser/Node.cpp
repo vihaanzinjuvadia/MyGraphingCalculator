@@ -5,5 +5,10 @@
 #include "Node.h"
 
 Node::Node(const std::string &v)
-    : value {v}, numeric_value {nullptr}, left {nullptr}, right {nullptr} {
+    : value {v}, left {nullptr}, right {nullptr} {
+}
+
+Node::~Node() {
+    delete left;
+    delete right;
 }

@@ -8,35 +8,41 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include "Node.h"
 #include "Utility/UtilityVariables.h"
 #include "Utility/UtilityFunctions.h"
 
+/*
+expression : term ((PLUS | MINUS) term)*
+term       : unary ((MUL | DIV) unary)*
+unary      : (PLUS | MINUS) unary | power
+power      : atom (EXPO unary)?                 // right associative, so 2^3^2 is 2^(3^2)
+atom       : NUMBER | VARIABLE | FUNCTION atom | LPAREN expression RPAREN
+*/
 class Parser {
 private:
-    const std::vector<std::string> &tokens;
+    // Held by value so a Parser built straight from Lexer::tokenize() isn't left
+    // referring to a temporary.
+    std::vector<std::string> tokens;
     std::string current_token;
-    int current_index;
-    std::string previous_operand;
-    Node *previous_node;
+    std::size_t current_index;
 
-    bool is_same_precedence();
-
+    bool at_end() const;
     void advance();
+    void expect(const std::string &token);
 
-    Node* parse_expression(); // Lowest Precedence, first called -->  expr: term ((PLUS | MINUS) term)*
-    Node* parse_term();       // Expressions could have terms which are multiplied or divided -->  term: expo ((MUL | DIV) expo)*
-    Node* parse_exponents();  // Terms could have exponents
-    Node* parse_functions();
-    Node* parse_factor();     // Exponents have integers or parenthesis
-
-    Node* handle_same_precedence(Node* node, Node* (Parser::*function)());
-    Node* handle_regular(Node* node, Node* (Parser::*function)());
+    std::unique_ptr<Node> parse_expression();
+    std::unique_ptr<Node> parse_term();
+    std::unique_ptr<Node> parse_unary();
+    std::unique_ptr<Node> parse_power();
+    std::unique_ptr<Node> parse_atom();
 
 public:
-    Parser(const std::vector<std::string> &tokens);
-    Node* parse(); /// THIS WHOLE THING RETURNS THE WHOLE AST OF THE EQUATION
+    explicit Parser(const std::vector<std::string> &tokens);
 
+    // Caller owns the returned tree; deleting the root deletes all of it.
+    Node* parse();
 };
 
 

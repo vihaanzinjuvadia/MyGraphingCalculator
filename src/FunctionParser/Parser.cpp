@@ -4,144 +4,141 @@
 
 #include "Parser.h"
 #include "Utility/UtilityFunctions.h"
-#include <algorithm>
+#include <cctype>
+#include <stdexcept>
+
+namespace {
+    bool is_number_token(const std::string &token) {
+        if (token.empty()) {
+            return false;
+        }
+        const unsigned char first = static_cast<unsigned char>(token.front());
+        return std::isdigit(first) || token.front() == '.';
+    }
+}
 
 Parser::Parser(const std::vector<std::string> &tokens)
-    : tokens {tokens}, current_index {0}, current_token {tokens.at(0)}, previous_node {nullptr} {
-}
-
-Node* Parser::handle_same_precedence(Node* node, Node* (Parser::*function)()) {
-    auto sub_node = new Node(previous_operand);
-    sub_node->left = previous_node->left;
-    this->advance();
-    auto sub_right = node;
-    sub_node->right = sub_right;
-    node = new Node(current_token);
-    node->left = sub_node;
-    node->right = (this->*function)();
-    return node;
-}
-
-Node* Parser::handle_regular(Node *node, Node *(Parser::*function)()) {
-    auto left = node;
-    node = new Node(current_token);
-    node->left = left;
-    this->advance();
-    node->right = (this->*function)();
-    return node;
-}
-
-bool Parser::is_same_precedence() {
-    if ((previous_operand == "+" && previous_operand == "-") && (current_token == "-" && current_token == "+")) {
-        return true;
-    } else if ((previous_operand == "*" || previous_operand == "/") && (current_token == "/" && current_token == "*")) {
-        return true;
-    } else if (previous_operand == "^" && current_token == "^") {
-        return true;
+    : tokens {tokens}, current_token {}, current_index {0} {
+    if (!this->tokens.empty()) {
+        current_token = this->tokens.front();
     }
-    return false;
+}
+
+bool Parser::at_end() const {
+    return current_index >= tokens.size();
+}
+
+void Parser::advance() {
+    current_index++;
+    current_token = at_end() ? std::string {} : tokens.at(current_index);
+}
+
+void Parser::expect(const std::string &token) {
+    if (at_end() || current_token != token) {
+        throw std::runtime_error("EXPECTED '" + token + "' BUT FOUND '" +
+                                 (at_end() ? std::string("END OF EXPRESSION") : current_token) + "'");
+    }
+    advance();
 }
 
 Node* Parser::parse() {
-    return this->parse_expression();
+    if (tokens.empty()) {
+        throw std::runtime_error("EMPTY EXPRESSION");
+    }
+
+    auto tree = parse_expression();
+
+    // Leftover tokens mean the input wasn't a single expression, e.g. "1 2".
+    if (!at_end()) {
+        throw std::runtime_error("UNEXPECTED TOKEN: '" + current_token + "'");
+    }
+
+    return tree.release();
 }
 
-/*
-expr     : term ((PLUS | MINUS) term)*
-term     : expo ((MUL | DIV) expo)*
-expo     : factor ((EXPO) factor)*
-factor   : INTEGER | LPAREN expr RPAREN
-*/
-void Parser::advance() {
-    if (current_token == "+" || current_token == "-" || current_token == "*" || current_token == "/" || current_token == "^") {
-        previous_operand = current_token;
+std::unique_ptr<Node> Parser::parse_expression() {
+    auto node = parse_term();
+    while (!at_end() && (current_token == "+" || current_token == "-")) {
+        auto op = std::make_unique<Node>(current_token);
+        advance();
+        auto right = parse_term();
+        op->left = node.release();
+        op->right = right.release();
+        node = std::move(op);
     }
-    current_index++;
-    if (current_index < tokens.size()) {
-        current_token = tokens.at(current_index);
-    }
+    return node;
 }
 
-Node* Parser::parse_expression() {
-    auto node = this->parse_term();
-    while (current_token == "+" || current_token == "-") {
-        // Same Precedence Handling
-        if (is_same_precedence()) {
-            node = handle_same_precedence(node, &Parser::parse_term);
+std::unique_ptr<Node> Parser::parse_term() {
+    auto node = parse_unary();
+    while (!at_end() && (current_token == "*" || current_token == "/")) {
+        auto op = std::make_unique<Node>(current_token);
+        advance();
+        auto right = parse_unary();
+        op->left = node.release();
+        op->right = right.release();
+        node = std::move(op);
+    }
+    return node;
+}
+
+std::unique_ptr<Node> Parser::parse_unary() {
+    if (!at_end() && (current_token == "+" || current_token == "-")) {
+        const bool negate {current_token == "-"};
+        advance();
+        auto operand = parse_unary();
+        if (!negate) {
+            return operand;
         }
-        // Negative Handling
-        if ((std::isdigit(tokens.at(current_index+1).at(0)) ||
-            (tokens.at(current_index+1) == variable1) || tokens.at(current_index+1) == variable2)
-            && (current_index==0 || !std::isdigit(current_index-1)) && current_token=="-") {
-            if (node == nullptr) { // -1
-                auto left = new Node("0");
-                node = new Node(current_token);
-                node->left = left;
-                this->advance();
-                node->right = this->parse_term();
-            } else { // 2^-1
-                auto sub_node = new Node(current_token);
-                sub_node->left = node;
-                this->advance();
-                auto sub_right = this->parse_term();
-                sub_node->right = sub_right;
-                node = sub_node;
-            }
-        } else {
-            node = handle_regular(node, &Parser::parse_term);
-        }
+        // 0 - operand, so the evaluator only ever sees binary operators.
+        auto op = std::make_unique<Node>("-");
+        op->left = new Node("0");
+        op->right = operand.release();
+        return op;
     }
-    previous_node = node;
-    return  node;
+    return parse_power();
 }
 
-Node* Parser::parse_term() {
-    auto node = this->parse_exponents();
-    while (current_token == "*" || current_token == "/") {
-        if (is_same_precedence()) {
-            node = handle_same_precedence(node, &Parser::parse_exponents);
-        } else {
-            node = handle_regular(node, &Parser::parse_exponents);
-        }
-    }
-    previous_node = node;
-    return node;
-}
-
-Node* Parser::parse_exponents() {
-    auto node = this->parse_functions();
-    while (current_token == "^") {
-        node = handle_regular(node, &Parser::parse_functions);
-    }
-    previous_node = node;
-    return node;
-}
-
-Node* Parser::parse_functions() {
-    auto node = this->parse_factor();
-    while (in(current_token, special_tokens)) {
-        auto left = nullptr;
-        node = new Node(current_token);
-        node->left = left;
-        this->advance();
-        node->right = this->parse_factor();
+std::unique_ptr<Node> Parser::parse_power() {
+    auto node = parse_atom();
+    if (!at_end() && current_token == "^") {
+        advance();
+        // parse_unary keeps ^ right associative and lets the exponent carry a sign,
+        // so 2^3^2 and 2^-1 both come out right.
+        auto right = parse_unary();
+        auto op = std::make_unique<Node>("^");
+        op->left = node.release();
+        op->right = right.release();
+        return op;
     }
     return node;
 }
 
-Node* Parser::parse_factor() {
-    Node *node = nullptr;
-    if (std::isdigit(current_token.at(0)) || (current_token == variable1 || current_token == variable2)) {
-        node = new Node(current_token);
-        this->advance();
-        return node;
-    } else if (current_token == "(") {
-        this->advance();
-        auto temp = this->parse_expression();
-        node = new Node(current_token);
-        node = temp;
-        this->advance();
-        return node;
+std::unique_ptr<Node> Parser::parse_atom() {
+    if (at_end()) {
+        throw std::runtime_error("UNEXPECTED END OF EXPRESSION");
     }
-    return node;
+
+    if (current_token == "(") {
+        advance();
+        auto inner = parse_expression();
+        expect(")");
+        return inner;
+    }
+
+    if (in(current_token, special_tokens)) {
+        auto function = std::make_unique<Node>(current_token);
+        advance();
+        // Left stays null; that's how the evaluator spots a function node.
+        function->right = parse_atom().release();
+        return function;
+    }
+
+    if (current_token == variable1 || current_token == variable2 || is_number_token(current_token)) {
+        auto leaf = std::make_unique<Node>(current_token);
+        advance();
+        return leaf;
+    }
+
+    throw std::runtime_error("UNEXPECTED TOKEN: '" + current_token + "'");
 }

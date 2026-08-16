@@ -3,124 +3,118 @@
 //
 
 #include "Lexer.h"
-#include <iostream>
+#include <cctype>
+#include <stdexcept>
 
-#define PI 3.1415926
-#define E  2.7182818
+namespace {
+    // Full double precision: std::to_string would round these to six decimals.
+    const std::string PI_LITERAL {"3.14159265358979323846"};
+    const std::string E_LITERAL  {"2.71828182845904523536"};
 
+    // std::isdigit/std::isalpha are undefined for negative char values.
+    bool is_digit(const char c) {
+        return std::isdigit(static_cast<unsigned char>(c)) != 0;
+    }
+    bool is_alpha(const char c) {
+        return std::isalpha(static_cast<unsigned char>(c)) != 0;
+    }
+    bool is_number_token(const std::string &token) {
+        return !token.empty() && (is_digit(token.front()) || token.front() == '.');
+    }
+    bool is_variable_token(const std::string &token) {
+        return token == variable1 || token == variable2;
+    }
+    bool ends_a_value(const std::string &token) {
+        return token == ")" || is_number_token(token) || is_variable_token(token);
+    }
+    bool starts_a_value(const std::string &token) {
+        return token == "(" || is_number_token(token) || is_variable_token(token) ||
+               in(token, special_tokens);
+    }
+}
 
 Lexer::Lexer(const std::string &function)
     : function {function}
     {}
 
-// just basic tokenizer rn, worry about functions later.
 std::vector<std::string> Lexer::tokenize() {
     std::vector<std::string> tokens {};
-    for (int i {}; i < function.length(); i++) {
-        char at {function.at(i)};
+
+    for (std::size_t i {}; i < function.length(); i++) {
+        const char at {function.at(i)};
 
         // Ignoring Whitespace And Other Characters
-        if (at == ' ' || at == '\n' || at == '\t') {
-
+        if (at == ' ' || at == '\n' || at == '\t' || at == '\r') {
+            continue;
         }
+
         // Handling Operators
-        else if (in(std::string(1, at), operators)) {
+        if (in(std::string(1, at), operators)) {
             tokens.push_back(std::string(1, at));
         }
         // Handling Variable
-        else if (at == variable1[0] || at == variable2[0]) {
+        else if (is_variable_token(std::string(1, at))) {
             tokens.push_back(std::string(1, at));
         }
-        // Handling Numbers, Constants and Later, Functions
-        else {
+        // Handling Numbers
+        else if (is_digit(at) || at == '.') {
             std::string number {};
-            std::string special_token {};
+            bool seen_decimal_point {false};
 
-            // Handling Number
-            int decimal_point_count {};
-            if (std::isdigit(at) || at == '.') {
-                if (std::isdigit(at)) {
-                    while (std::isdigit(at)) {
-                        number += at;
-                        i++;
-                        at = function[i];
-                        // decimal point check
-                        if (at == '.') {
-                            decimal_point_count++;
-                            if (decimal_point_count == 1) {
-                                number += at;
-                                i++;
-                                at = function[i];
-                            }
-                        }
+            while (i < function.length()) {
+                const char c {function.at(i)};
+                if (is_digit(c)) {
+                    number += c;
+                } else if (c == '.') {
+                    if (seen_decimal_point) {
+                        throw std::runtime_error("NUMBER HAS MORE THAN ONE DECIMAL POINT: " + number + ".");
                     }
-
-                    tokens.push_back(number);
-                    // To make sure that i++ doesn't happen twice and that we skip over a token;
-                    i--;
-                }
-            }
-
-            // Handling Function
-            else if (std::isalpha(at)) {
-                while (std::isalpha(at)) {
-                    special_token.push_back(at);
-                    i++;
-                    at = function[i];
-                }
-                // To make sure that i++ doesn't happen twice and that we skip over a token;
-                i--;
-
-                // Function part
-                if (in(special_token, special_tokens)) {
-                    tokens.push_back(special_token);
-                } // Constants Part
-                  else if (in(special_token, constants)) {
-                    if (special_token == "pi") {
-                        special_token = std::to_string(PI);
-                        tokens.push_back(special_token);
-                    } else {
-                        special_token = std::to_string(E);
-                        tokens.push_back(special_token);
-                    }
+                    seen_decimal_point = true;
+                    number += c;
                 } else {
-                    std::cout << "INVALID TOKEN!: " << special_token << std::endl;
-                    std::exit(1);
+                    break;
                 }
+                i++;
             }
-            else {
-                std::cout << "INVALID TOKEN!: " << at << std::endl;
+            // To make sure that i++ doesn't happen twice and that we skip over a token;
+            i--;
+
+            if (number == ".") {
+                throw std::runtime_error("A LONE '.' IS NOT A NUMBER");
             }
+            tokens.push_back(number);
+        }
+        // Handling Functions and Constants
+        else if (is_alpha(at)) {
+            std::string special_token {};
+            while (i < function.length() && is_alpha(function.at(i))) {
+                special_token += function.at(i);
+                i++;
+            }
+            // To make sure that i++ doesn't happen twice and that we skip over a token;
+            i--;
+
+            // Function part
+            if (in(special_token, special_tokens)) {
+                tokens.push_back(special_token);
+            } // Constants Part
+              else if (in(special_token, constants)) {
+                tokens.push_back(special_token == "pi" ? PI_LITERAL : E_LITERAL);
+            } else {
+                throw std::runtime_error("INVALID TOKEN: '" + special_token + "'");
+            }
+        }
+        else {
+            throw std::runtime_error("INVALID CHARACTER: '" + std::string(1, at) + "'");
         }
     }
 
-    // Handling Implicit Multiplication
-    for (int i {}; i < tokens.size()-1;i++) {
-        auto at = tokens.at(i);
-        auto next = tokens.at(i+1);
-        // CASE: NUMBER (<VARIABLE || NUMBER, FUNCTION>)
-        if (std::isdigit(at.at(0)) && next == "(") {
-            tokens.insert(tokens.begin() + i + 1, "*");
-        }
-        // CASE: NUMBER <VARIABLE || FUNCTION>
-        else if (std::isdigit(at.at(0)) && ((next.size() == 1 && (next.at(0) == variable1[0] || next.at(0) == variable2[0])) || in(next, special_tokens))) {
-            tokens.insert(tokens.begin() + i + 1, "*");
-        }
-        // CASE: Variable Variable
-        else if (((at.size() == 1 && (at.at(0) == variable1[0] || at.at(0) == variable2[0]))) && ((next.size() == 1 && (next.at(0) == variable1[0] || next.at(0) == variable2[0])))) {
-            tokens.insert(tokens.begin() + i + 1, "*");
-        }
-        // CASE: Variable (<VARIABLE || FUNCTION>)
-        else if (((at.size() == 1 && (at.at(0) == variable1[0] || at.at(0) == variable2[0]))) && next == "(") {
-            tokens.insert(tokens.begin() + i + 1, "*");
-        }
-        // CASE: VARIABLE FUNCTION
-        else if (((at.size() == 1 && (at.at(0) == variable1[0] || at.at(0) == variable2[0]))) && in(next, special_tokens)) {
-            tokens.insert(tokens.begin() + i + 1, "*");
-        }
-        // CASE: RIGHT_PAREN (<VARIABLE || FUNCTION || LEFT_PAREN>)
-        else if (at == ")" && ((next.size() == 1 && (next.at(0) == variable1[0] || next.at(0) == variable2[0])) || in(next, special_tokens) || next == "(")) {
-            tokens.insert(tokens.begin() + i + 1, "*");
+    // Handling Implicit Multiplication, e.g. 2x, 3(x+1), xy, (x+1)(x-1), 2sin(x)
+    // i + 1 < size() rather than i < size() - 1, which wraps around on empty input.
+    for (std::size_t i {}; i + 1 < tokens.size(); i++) {
+        if (ends_a_value(tokens.at(i)) && starts_a_value(tokens.at(i + 1))) {
+            tokens.insert(tokens.begin() + static_cast<long>(i) + 1, "*");
+            i++;
         }
     }
 
@@ -137,11 +131,11 @@ std::vector<std::string> Lexer::tokenize() {
         }
 
         if (right_paren_count > left_paren_count) {
-            throw std::logic_error("CANT HAVE MORE RIGHT PARENTHESES THAN LEFT!");
+            throw std::runtime_error("CANT HAVE MORE RIGHT PARENTHESES THAN LEFT!");
         }
     }
     if (left_paren_count != right_paren_count) {
-        throw std::logic_error("MUST HAVE EQUAL AMOUNT OF PARENTHESES");
+        throw std::runtime_error("MUST HAVE EQUAL AMOUNT OF PARENTHESES");
     }
 
     return tokens;

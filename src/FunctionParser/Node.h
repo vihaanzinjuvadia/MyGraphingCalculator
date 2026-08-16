@@ -10,11 +10,15 @@
 class Node {
 public:
     std::string value;
-    double* numeric_value;
     Node* left;
     Node* right;
 
-    Node(const std::string &v);
+    explicit Node(const std::string &v);
+    ~Node();
+
+    // A node owns its children, so copying one would double free the subtree.
+    Node(const Node &) = delete;
+    Node& operator=(const Node &) = delete;
 };
 
 
